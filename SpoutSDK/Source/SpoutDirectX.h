@@ -34,8 +34,11 @@
 
 #include "SpoutCommon.h"
 #include <windowsx.h>
+#pragma warning(push)
+#pragma warning(disable : 4005)
 #include <d3d9.h>
 #include <d3d11.h>
+#pragma warning(pop)
 // #include <DXGI.h> // LJ DEBUG
 #include <string>
 #include <iostream>

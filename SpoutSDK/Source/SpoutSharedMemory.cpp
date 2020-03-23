@@ -119,9 +119,18 @@ SpoutCreateResult SpoutSharedMemory::Create(const char* name, int size)
 		return SPOUT_CREATE_FAILED;
 	}
 
+	MEMORY_BASIC_INFORMATION information{0};
+	
+	SIZE_T written = VirtualQuery(m_pBuffer, &information, sizeof(information));
+
+	if (written < sizeof(information)) {
+		Close();
+		return SPOUT_CREATE_FAILED;
+	}
+
 	// Set the name and size
 	m_pName = _strdup(name);
-	m_size = size;
+	m_size = size > (int)information.RegionSize ? (int)information.RegionSize : size;
 
 	return alreadyExists ? SPOUT_ALREADY_EXISTS : SPOUT_CREATE_SUCCESS;
 
@@ -160,8 +169,19 @@ bool SpoutSharedMemory::Open(const char* name)
 		return false;
 	}
 
+	MEMORY_BASIC_INFORMATION information{0};
+
+	SIZE_T written = VirtualQuery(m_pBuffer, &information, sizeof(information));
+
+	if (written < sizeof(information))
+	{
+		Close();
+		return SPOUT_CREATE_FAILED;
+	}
+
+	// Set the name and size
 	m_pName = _strdup(name);
-	m_size = 0;
+	m_size = (int)information.RegionSize;
 
 	return true;
 
@@ -250,4 +270,14 @@ void SpoutSharedMemory::Debug()
 		printf("Shared Memory Map is not open\n");
 	}
 	*/
+}
+
+int SpoutSharedMemory::GetSize()
+{
+	return m_size;
+}
+
+HANDLE SpoutSharedMemory::GetMutex()
+{
+    return m_hMutex;
 }

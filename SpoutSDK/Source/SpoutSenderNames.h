@@ -37,8 +37,11 @@
 #define __spoutSenderNames__
 
 #include <windowsx.h>
+#pragma warning(push)
+#pragma warning(disable : 4005)
 #include <d3d9.h>
 #include <d3d11.h>
+#pragma warning(pop)
 #include <wingdi.h>
 #include <set>
 #include <map>
@@ -145,8 +148,8 @@ protected:
 		void cleanSenderSet();
 
 		// Functions to manage shared memory map access
-		static void readSenderSetFromBuffer(const char* buffer, std::set<std::string>& SenderNames, int maxSenders);
-		static void	writeBufferFromSenderSet(const std::set<std::string>& SenderNames, char *buffer, int maxSenders);
+		static void readSenderSetFromBuffer(const char* buffer, int size, std::set<std::string>& SenderNames, int maxSenders);
+		static void	writeBufferFromSenderSet(const std::set<std::string>& SenderNames, char *buffer, int size, int maxSenders);
 
 		SpoutSharedMemory	m_senderNames;
 		SpoutSharedMemory	m_activeSender;

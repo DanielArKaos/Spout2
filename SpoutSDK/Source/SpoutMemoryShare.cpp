@@ -209,3 +209,18 @@ void spoutMemoryShare::UnlockSenderMemory()
 	senderMem->Unlock();
 }
 
+HANDLE spoutMemoryShare::GetMutex()
+{
+    if (!senderMem)
+        return NULL;
+
+    return senderMem->GetMutex();
+}
+
+int spoutMemoryShare::GetLockSenderMemorySize()
+{
+    if (!senderMem)
+        return 0;
+
+    return senderMem->GetSize();
+}

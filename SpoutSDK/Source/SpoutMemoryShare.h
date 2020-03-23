@@ -63,9 +63,12 @@ class SPOUT_DLLEXP spoutMemoryShare {
 		// Lock and unlock memory and retrieve buffer pointer
 		unsigned char * LockSenderMemory();
 		void UnlockSenderMemory();
+		int GetLockSenderMemorySize();
 
 		// Close and release memory object
 		void ReleaseSenderMemory ();
+
+		HANDLE GetMutex();
 
 protected:
 

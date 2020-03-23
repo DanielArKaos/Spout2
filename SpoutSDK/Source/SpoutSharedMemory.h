@@ -37,7 +37,10 @@
 
 #include "SpoutCommon.h"
 #include <windowsx.h>
+#pragma warning(push)
+#pragma warning(disable : 4005)
 #include <d3d9.h>
+#pragma warning(pop)
 #include <wingdi.h>
 
 enum SpoutCreateResult
@@ -66,6 +69,9 @@ public:
 	void Unlock();
 
 	void Debug();
+
+	int GetSize();
+	HANDLE GetMutex();
 
 private:
 

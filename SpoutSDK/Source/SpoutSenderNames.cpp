@@ -106,9 +106,10 @@ bool spoutSenderNames::RegisterSenderName(const char* Sendername) {
 
 	char *pBuf = m_senderNames.Lock();
 	if (!pBuf) return false;
+	int size = m_senderNames.GetSize();
 
 	// Register the sender name in the list of spout senders
-	readSenderSetFromBuffer(pBuf, SenderNames, m_MaxSenders);
+	readSenderSetFromBuffer(pBuf, size, SenderNames, m_MaxSenders);
 
 	//
 	// Add the Sender name to the set of names
@@ -117,13 +118,13 @@ bool spoutSenderNames::RegisterSenderName(const char* Sendername) {
 	if(!ret.second) {
 		// See if there are any dangling entries that aren't valid anymore
 		cleanSenderSet();
-		readSenderSetFromBuffer(pBuf, SenderNames, m_MaxSenders);
+		readSenderSetFromBuffer(pBuf, size, SenderNames, m_MaxSenders);
 		ret = SenderNames.insert(Sendername);
 	}
 
 	if(ret.second) {
 		// write the new map to shared memory
-		writeBufferFromSenderSet(SenderNames, pBuf, m_MaxSenders);
+		writeBufferFromSenderSet(SenderNames, pBuf, size, m_MaxSenders);
 		// Set as the active Sender if it is the first one registered
 		// Thereafter the user can select an active Sender using SpoutPanel or SpoutSenders
 		m_activeSender.Create("ActiveSenderName", SpoutMaxSenderNameLen);
@@ -152,6 +153,7 @@ bool spoutSenderNames::ReleaseSenderName(const char* Sendername)
 
 	char *pBuf = m_senderNames.Lock();
 	if (!pBuf) return false;
+	int size = m_senderNames.GetSize();
 
 	namestring = Sendername;
 	auto foundSender = m_senders->find(namestring);
@@ -160,7 +162,7 @@ bool spoutSenderNames::ReleaseSenderName(const char* Sendername)
 		m_senders->erase(namestring);
 	}
 
-	readSenderSetFromBuffer(pBuf, SenderNames, m_MaxSenders);
+	readSenderSetFromBuffer(pBuf, size, SenderNames, m_MaxSenders);
 
 	// Discovered that the project properties had been set to CLI
 	// Properties -> General -> Common Language Runtime Support
@@ -172,7 +174,7 @@ bool spoutSenderNames::ReleaseSenderName(const char* Sendername)
 
 		SenderNames.erase(Sendername); // erase the matching Sender
 
-		writeBufferFromSenderSet(SenderNames, pBuf, m_MaxSenders);
+		writeBufferFromSenderSet(SenderNames, pBuf, size, m_MaxSenders);
 
 		// Is there a set left ?
 		if(SenderNames.size() > 0) {
@@ -229,8 +231,10 @@ void spoutSenderNames::cleanSenderSet()
 	    return;
 	}
 
+	int size = m_senderNames.GetSize();
+
 	std::set<std::string> SenderNames;
-	readSenderSetFromBuffer(pBuf, SenderNames, m_MaxSenders);
+	readSenderSetFromBuffer(pBuf, size, SenderNames, m_MaxSenders);
 
 	bool changed = false;
 
@@ -258,7 +262,7 @@ void spoutSenderNames::cleanSenderSet()
 
 	if (changed)
 	{
-		writeBufferFromSenderSet(SenderNames, pBuf, m_MaxSenders);
+		writeBufferFromSenderSet(SenderNames, pBuf, size, m_MaxSenders);
 	}
 
 	m_senderNames.Unlock();
@@ -730,11 +734,21 @@ bool spoutSenderNames::CheckSender(const char *sendername, unsigned int &theWidt
 // Private functions for multiple Sender support //
 ///////////////////////////////////////////////////
 
-void spoutSenderNames::readSenderSetFromBuffer(const char* buffer, std::set<std::string>& SenderNames, int maxSenders)
+void spoutSenderNames::readSenderSetFromBuffer(const char* buffer, int size, std::set<std::string>& SenderNames, int maxSenders)
 {
 	// first empty the set
 	if(SenderNames.size() > 0) {
 		SenderNames.erase (SenderNames.begin(), SenderNames.end() );
+	}
+
+	if (maxSenders > (size / SpoutMaxSenderNameLen))
+	{
+		maxSenders = size / SpoutMaxSenderNameLen;
+	}
+
+	if (maxSenders < 1)
+	{
+		return;
 	}
 
 	const char *buf = buffer;
@@ -759,12 +773,22 @@ void spoutSenderNames::readSenderSetFromBuffer(const char* buffer, std::set<std:
 }
 
 
-void spoutSenderNames::writeBufferFromSenderSet(const std::set<std::string>& SenderNames, char* buffer, int maxSenders)
+void spoutSenderNames::writeBufferFromSenderSet(const std::set<std::string>& SenderNames, char* buffer, int size, int maxSenders)
 {
 	std::string namestring;
 	char *buf = buffer; // pointer within the buffer
 	int i = 0;
 	std::set<std::string>::iterator iter;
+
+	if (maxSenders > (size / SpoutMaxSenderNameLen))
+	{
+		maxSenders = size / SpoutMaxSenderNameLen;
+	}
+
+	if (maxSenders < 1)
+	{
+		return;
+	}
 
 	for(iter = SenderNames.begin(); iter != SenderNames.end(); iter++) {
 		namestring = *iter; // the string to copy to the buffer
@@ -823,6 +847,8 @@ bool spoutSenderNames::GetSenderSet(std::set<std::string>& SenderNames) {
 		return false;
 	}
 
+	int size = m_senderNames.GetSize();
+
 	// The data has been stored with 256 bytes reserved for each Sender name
 	// and nothing will have changed with the map yet
 	if(pBuf[0] == 0) { // no senders yet
@@ -833,7 +859,7 @@ bool spoutSenderNames::GetSenderSet(std::set<std::string>& SenderNames) {
 	// Read back from the mapped memory buffer and rebuild the set that was passed in
 	// The set will then contain the senders currently in the memory map
 	// and allow for any that have been added or deleted
-	readSenderSetFromBuffer(pBuf, SenderNames, m_MaxSenders);
+	readSenderSetFromBuffer(pBuf, size, SenderNames, m_MaxSenders);
 
 	m_senderNames.Unlock();
 
